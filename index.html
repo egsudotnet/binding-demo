@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vue Demo</title>
+</head>
+<body>
+	<!-- header include (dynamically copied from header.html) -->
+	<header>
+		<nav class="tabs" role="navigation" aria-label="Demo tabs">
+			<a class="tab" href="index.html" data-tab="native">Native</a>
+			<a class="tab" href="jquery.html" data-tab="jquery">JQuery</a>
+			<a class="tab" href="vue.html" data-tab="vue">Vue</a>
+		</nav>
+	</header>
+
+	<style>
+		/* Simple tab styles */
+		.tabs { display:flex; gap:8px; padding:12px; background:#f7f7f8; border-bottom:1px solid #e0e0e0; }
+		.tab { display:inline-block; padding:8px 14px; text-decoration:none; color:#333; border-radius:6px 6px 0 0; background:transparent; transition: background .12s ease, color .12s ease; border:1px solid transparent; }
+		.tab:hover { background:#f0f0f0; }
+		.tab.active { background:white; color:#111; border-color:#e0e0e0; border-bottom-color:white; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
+		body { margin:0; }
+	</style>
+
+	<main style="padding:16px;">
+		<h1>Todo (Native JS)</h1>
+		<section id="todo-app" aria-label="Todo app">
+			<form id="todo-form">
+				<input id="todo-input" type="text" placeholder="Tambah tugas baru..." autocomplete="off" required />
+				<button type="submit">Tambah</button>
+			</form>
+
+			<div id="todo-controls" style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+				<span id="todo-count">0 tugas</span>
+				<button id="clear-completed" type="button">Hapus yang selesai</button>
+				<button id="clear-all" type="button">Hapus semua</button>
+			</div>
+
+			<ul id="todo-list" style="list-style:none; padding:0; margin-top:12px; max-width:720px;"></ul>
+		</section>
+	</main>
+
+	<script>
+		(function(){
+			function getFilename(path) { var parts = path.split('/'); var last = parts.pop() || parts.pop(); return last || ''; }
+			var filename = getFilename(window.location.pathname).toLowerCase();
+			var tabs = document.querySelectorAll('.tabs .tab');
+			if (!filename) filename = 'index.html';
+			tabs.forEach(function(t){ var href = t.getAttribute('href') || ''; var target = getFilename(href).toLowerCase(); if (target && filename.indexOf(target) !== -1) t.classList.add('active'); });
+		})();
+	</script>
+
+	<!-- Include local storage API (must be before app script) -->
+	<script src="local.js"></script>
+
+	<script>
+	// Native JS Todo app wiring using global localTodoApi
+	(function () {
+		'use strict';
+
+		function q(sel, ctx) { return (ctx || document).querySelector(sel); }
+		function qa(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+
+		var form = q('#todo-form');
+		var input = q('#todo-input');
+		var listEl = q('#todo-list');
+		var countEl = q('#todo-count');
+		var clearCompletedBtn = q('#clear-completed');
+		var clearAllBtn = q('#clear-all');
+
+		function formatCount(n) { return n + (n === 1 ? ' tugas' : ' tugas'); }
+
+		function render() {
+			var todos = [];
+			if (window.localTodoApi && window.localTodoApi.isAvailable()) {
+				todos = window.localTodoApi.getAll() || [];
+			}
+			// sort by createdAt asc
+			todos.sort(function(a,b){ return (a.createdAt||0) - (b.createdAt||0); });
+
+			// update count
+			countEl.textContent = formatCount(todos.length);
+
+			// render list
+			listEl.innerHTML = '';
+			if (!todos.length) {
+				var empty = document.createElement('li');
+				empty.textContent = 'Belum ada tugas. Tambah tugas di atas.';
+				empty.style.color = '#666';
+				listEl.appendChild(empty);
+				return;
+			}
+
+			todos.forEach(function (t) {
+				var li = document.createElement('li');
+				li.setAttribute('data-id', t.id);
+				li.style.display = 'flex';
+				li.style.alignItems = 'center';
+				li.style.gap = '8px';
+				li.style.padding = '8px 6px';
+				li.style.borderBottom = '1px solid #eee';
+
+				var cb = document.createElement('input');
+				cb.type = 'checkbox';
+				cb.checked = !!t.completed;
+				cb.className = 'todo-checkbox';
+
+				var label = document.createElement('label');
+				label.textContent = t.title || '(tanpa judul)';
+				label.style.flex = '1';
+				label.style.cursor = 'pointer';
+				if (t.completed) label.style.textDecoration = 'line-through';
+
+				var editBtn = document.createElement('button');
+				editBtn.type = 'button';
+				editBtn.textContent = 'Edit';
+				editBtn.className = 'todo-edit';
+
+				var delBtn = document.createElement('button');
+				delBtn.type = 'button';
+				delBtn.textContent = 'Hapus';
+				delBtn.className = 'todo-delete';
+
+				li.appendChild(cb);
+				li.appendChild(label);
+				li.appendChild(editBtn);
+				li.appendChild(delBtn);
+
+				listEl.appendChild(li);
+			});
+		}
+
+		function addTodo(title) {
+			if (!window.localTodoApi || !window.localTodoApi.isAvailable()) return null;
+			var item = window.localTodoApi.add({ title: title });
+			render();
+			return item;
+		}
+
+		function toggleTodo(id, completed) {
+			if (!window.localTodoApi) return;
+			window.localTodoApi.update(id, { completed: !!completed });
+			render();
+		}
+
+		function deleteTodo(id) {
+			if (!window.localTodoApi) return;
+			window.localTodoApi.remove(id);
+			render();
+		}
+
+		function editTodo(id, newTitle) {
+			if (!window.localTodoApi) return null;
+			var updated = window.localTodoApi.update(id, { title: String(newTitle) });
+			render();
+			return updated;
+		}
+
+		// event bindings
+		document.addEventListener('click', function (ev) {
+			var btn = ev.target;
+			if (btn.classList.contains('todo-delete')) {
+				var li = btn.closest('li');
+				if (!li) return;
+				var id = li.getAttribute('data-id');
+				deleteTodo(id);
+			}
+			if (btn.classList.contains('todo-edit')) {
+				var li = btn.closest('li');
+				if (!li) return;
+				var id = li.getAttribute('data-id');
+				var label = li.querySelector('label');
+				// turn into input
+				var input = document.createElement('input');
+				input.type = 'text';
+				input.value = label.textContent;
+				input.style.flex = '1';
+				li.replaceChild(input, label);
+				input.focus();
+				input.addEventListener('blur', function () { editTodo(id, input.value); });
+				input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { input.blur(); } if (e.key === 'Escape') { render(); } });
+			}
+		});
+
+		// checkbox toggle via event delegation
+		document.addEventListener('change', function (ev) {
+			if (ev.target.classList && ev.target.classList.contains('todo-checkbox')) {
+				var li = ev.target.closest('li');
+				if (!li) return;
+				var id = li.getAttribute('data-id');
+				toggleTodo(id, ev.target.checked);
+			}
+		});
+
+		form.addEventListener('submit', function (e) {
+			e.preventDefault();
+			var v = input.value && input.value.trim();
+			if (!v) return;
+			addTodo(v);
+			input.value = '';
+			input.focus();
+		});
+
+		clearCompletedBtn.addEventListener('click', function () {
+			if (!window.localTodoApi) return;
+			window.localTodoApi.clearCompleted();
+			render();
+		});
+
+		clearAllBtn.addEventListener('click', function () {
+			if (!window.localTodoApi) return;
+			if (confirm('Hapus semua tugas?')) {
+				window.localTodoApi.clearAll();
+				render();
+			}
+		});
+
+		// respond to storage changes (cross-tab or API events)
+		window.addEventListener('localTodoApi:changed', function () { render(); });
+
+		// initial render; wait for DOM ready
+		document.addEventListener('DOMContentLoaded', function () { render(); });
+
+		// also render immediately in case script loaded after DOM
+		render();
+
+	})();
+	</script>
+
+	</body>
+	</html>

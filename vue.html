@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vue Demo</title>
+</head>
+<body>
+	<!-- header include (dynamically copied from header.html) -->
+	<header>
+		<nav class="tabs" role="navigation" aria-label="Demo tabs">
+			<a class="tab" href="index.html" data-tab="native">Native</a>
+			<a class="tab" href="jquery.html" data-tab="jquery">JQuery</a>
+			<a class="tab" href="vue.html" data-tab="vue">Vue</a>
+		</nav>
+	</header>
+
+	<style>
+		/* Simple tab styles */
+		.tabs { display:flex; gap:8px; padding:12px; background:#f7f7f8; border-bottom:1px solid #e0e0e0; }
+		.tab { display:inline-block; padding:8px 14px; text-decoration:none; color:#333; border-radius:6px 6px 0 0; background:transparent; transition: background .12s ease, color .12s ease; border:1px solid transparent; }
+		.tab:hover { background:#f0f0f0; }
+		.tab.active { background:white; color:#111; border-color:#e0e0e0; border-bottom-color:white; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
+		body { margin:0; }
+	</style>
+
+	<main style="padding:16px;">
+		<h1>Todo (Vue)</h1>
+		<section id="todo-app-vue" aria-label="Todo app (Vue)">
+			<form @submit.prevent="add">
+				<input id="todo-input" v-model="newTitle" type="text" placeholder="Tambah tugas baru..." autocomplete="off" />
+				<button type="submit">Tambah</button>
+			</form>
+
+			<div id="todo-controls" style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+				<span>{{ count }} tugas</span>
+				<button type="button" @click="clearCompleted">Hapus yang selesai</button>
+				<button type="button" @click="clearAll">Hapus semua</button>
+			</div>
+
+			<ul id="todo-list" style="list-style:none; padding:0; margin-top:12px; max-width:720px;">
+				<li v-for="todo in todosSorted" :key="todo.id" :data-id="todo.id" style="display:flex; align-items:center; gap:8px; padding:8px 6px; border-bottom:1px solid #eee;">
+					<input type="checkbox" v-model="todo.completed" @change="toggle(todo)" />
+					<div style="flex:1">
+						<span v-if="editingId !== todo.id" @dblclick="startEdit(todo)" :style="{ textDecoration: todo.completed ? 'line-through' : 'none', cursor: 'pointer' }">{{ todo.title || '(tanpa judul)' }}</span>
+						<input v-else v-model="editingTitle" @blur="finishEdit(todo)" @keydown.enter="finishEdit(todo)" @keydown.esc="cancelEdit" style="width:100%" />
+					</div>
+					<button type="button" @click="startEdit(todo)">Edit</button>
+					<button type="button" @click="remove(todo.id)">Hapus</button>
+				</li>
+			</ul>
+		</section>
+	</main>
+
+	<script>
+		(function(){
+			function getFilename(path) { var parts = path.split('/'); var last = parts.pop() || parts.pop(); return last || ''; }
+			var filename = getFilename(window.location.pathname).toLowerCase();
+			var tabs = document.querySelectorAll('.tabs .tab');
+			if (!filename) filename = 'index.html';
+			tabs.forEach(function(t){ var href = t.getAttribute('href') || ''; var target = getFilename(href).toLowerCase(); if (target && filename.indexOf(target) !== -1) t.classList.add('active'); });
+		})();
+	</script>
+
+	<!-- Vue 3 + local storage API -->
+	<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+	<script src="local.js"></script>
+
+	<script>
+	(function () {
+		'use strict';
+
+		const { createApp, reactive, ref, computed } = Vue;
+
+		createApp({
+			setup() {
+				const newTitle = ref('');
+				const todos = reactive([]);
+				const editingId = ref(null);
+				const editingTitle = ref('');
+
+				function load() {
+					if (window.localTodoApi && window.localTodoApi.isAvailable()) {
+						const data = window.localTodoApi.getAll() || [];
+						// clear and push
+						todos.splice(0, todos.length, ...data);
+					}
+				}
+
+				const todosSorted = computed(() => {
+					return [...todos].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+				});
+
+				const count = computed(() => todos.length);
+
+				function add() {
+					const v = (newTitle.value || '').trim();
+					if (!v) return;
+					if (window.localTodoApi) {
+						window.localTodoApi.add({ title: v });
+						newTitle.value = '';
+						load();
+					}
+				}
+
+				function toggle(todo) {
+					if (!todo || !window.localTodoApi) return;
+					window.localTodoApi.update(todo.id, { completed: !!todo.completed });
+					load();
+				}
+
+				function remove(id) {
+					if (!window.localTodoApi) return;
+					window.localTodoApi.remove(id);
+					load();
+				}
+
+				function startEdit(todo) {
+					editingId.value = todo.id;
+					editingTitle.value = todo.title;
+				}
+
+				function finishEdit(todo) {
+					if (!editingId.value) return;
+					const v = (editingTitle.value || '').trim();
+					if (v) window.localTodoApi.update(todo.id, { title: v });
+					editingId.value = null;
+					editingTitle.value = '';
+					load();
+				}
+
+				function cancelEdit() {
+					editingId.value = null;
+					editingTitle.value = '';
+				}
+
+				function clearCompleted() {
+					if (!window.localTodoApi) return;
+					window.localTodoApi.clearCompleted();
+					load();
+				}
+
+				function clearAll() {
+					if (!window.localTodoApi) return;
+					if (confirm('Hapus semua tugas?')) {
+						window.localTodoApi.clearAll();
+						load();
+					}
+				}
+
+				// listen for external changes
+				window.addEventListener('localTodoApi:changed', load);
+
+				// initial load
+				load();
+
+				return {
+					newTitle,
+					todos,
+					todosSorted,
+					count,
+					editingId,
+					editingTitle,
+					add,
+					toggle,
+					remove,
+					startEdit,
+					finishEdit,
+					cancelEdit,
+					clearCompleted,
+					clearAll
+				};
+			}
+		}).mount('#todo-app-vue');
+	})();
+	</script>
+</body>
+</html>

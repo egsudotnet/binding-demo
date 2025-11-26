@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vue Demo</title>
+</head>
+<body>
+	<!-- header include (dynamically copied from header.html) -->
+	<header>
+		<nav class="tabs" role="navigation" aria-label="Demo tabs">
+			<a class="tab" href="index.html" data-tab="native">Native</a>
+			<a class="tab" href="jquery.html" data-tab="jquery">JQuery</a>
+			<a class="tab" href="vue.html" data-tab="vue">Vue</a>
+		</nav>
+	</header>
+
+	<style>
+		/* Simple tab styles */
+		.tabs { display:flex; gap:8px; padding:12px; background:#f7f7f8; border-bottom:1px solid #e0e0e0; }
+		.tab { display:inline-block; padding:8px 14px; text-decoration:none; color:#333; border-radius:6px 6px 0 0; background:transparent; transition: background .12s ease, color .12s ease; border:1px solid transparent; }
+		.tab:hover { background:#f0f0f0; }
+		.tab.active { background:white; color:#111; border-color:#e0e0e0; border-bottom-color:white; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
+		body { margin:0; }
+	</style>
+
+	<main style="padding:16px;">
+		<h1>Todo (jQuery)</h1>
+		<section id="todo-app" aria-label="Todo app (jQuery)">
+			<form id="todo-form">
+				<input id="todo-input" type="text" placeholder="Tambah tugas baru..." autocomplete="off" required />
+				<button type="submit">Tambah</button>
+			</form>
+
+			<div id="todo-controls" style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+				<span id="todo-count">0 tugas</span>
+				<button id="clear-completed" type="button">Hapus yang selesai</button>
+				<button id="clear-all" type="button">Hapus semua</button>
+			</div>
+
+			<ul id="todo-list" style="list-style:none; padding:0; margin-top:12px; max-width:720px;"></ul>
+		</section>
+	</main>
+
+	<script>
+		(function(){
+			function getFilename(path) { var parts = path.split('/'); var last = parts.pop() || parts.pop(); return last || ''; }
+			var filename = getFilename(window.location.pathname).toLowerCase();
+			var tabs = document.querySelectorAll('.tabs .tab');
+			if (!filename) filename = 'index.html';
+			tabs.forEach(function(t){ var href = t.getAttribute('href') || ''; var target = getFilename(href).toLowerCase(); if (target && filename.indexOf(target) !== -1) t.classList.add('active'); });
+		})();
+	</script>
+
+	<!-- jQuery (from CDN) + local storage API -->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="local.js"></script>
+
+	<script>
+	// jQuery-based Todo app wiring using localTodoApi
+	(function ($) {
+		'use strict';
+
+		var $form = $('#todo-form');
+		var $input = $('#todo-input');
+		var $list = $('#todo-list');
+		var $count = $('#todo-count');
+		var $clearCompleted = $('#clear-completed');
+		var $clearAll = $('#clear-all');
+
+		function render() {
+			var todos = [];
+			if (window.localTodoApi && window.localTodoApi.isAvailable()) {
+				todos = window.localTodoApi.getAll() || [];
+			}
+			// sort by createdAt
+			todos.sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+
+			$count.text(todos.length + (todos.length === 1 ? ' tugas' : ' tugas'));
+
+			$list.empty();
+			if (!todos.length) {
+				$('<li>').text('Belum ada tugas. Tambah tugas di atas.').css('color', '#666').appendTo($list);
+				return;
+			}
+
+			todos.forEach(function (t) {
+				var $li = $('<li>').attr('data-id', t.id).css({ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 6px', borderBottom: '1px solid #eee' });
+				var $cb = $('<input type="checkbox">').addClass('todo-checkbox').prop('checked', !!t.completed);
+				var $label = $('<label>').text(t.title || '(tanpa judul)').css({ flex: '1', cursor: 'pointer' });
+				if (t.completed) $label.css('textDecoration', 'line-through');
+				var $edit = $('<button type="button">').addClass('todo-edit').text('Edit');
+				var $del = $('<button type="button">').addClass('todo-delete').text('Hapus');
+
+				$li.append($cb, $label, $edit, $del);
+				$list.append($li);
+			});
+		}
+
+		function addTodo(title) {
+			if (!window.localTodoApi || !window.localTodoApi.isAvailable()) return null;
+			var item = window.localTodoApi.add({ title: title });
+			render();
+			return item;
+		}
+
+		function toggleTodo(id, completed) {
+			if (!window.localTodoApi) return;
+			window.localTodoApi.update(id, { completed: !!completed });
+			render();
+		}
+
+		function deleteTodo(id) {
+			if (!window.localTodoApi) return;
+			window.localTodoApi.remove(id);
+			render();
+		}
+
+		function editTodo(id, newTitle) {
+			if (!window.localTodoApi) return null;
+			var updated = window.localTodoApi.update(id, { title: String(newTitle) });
+			render();
+			return updated;
+		}
+
+		// delegated events
+		$list.on('change', '.todo-checkbox', function () {
+			var $li = $(this).closest('li');
+			var id = $li.attr('data-id');
+			toggleTodo(id, $(this).prop('checked'));
+		});
+
+		$list.on('click', '.todo-delete', function () {
+			var $li = $(this).closest('li');
+			deleteTodo($li.attr('data-id'));
+		});
+
+		$list.on('click', '.todo-edit', function () {
+			var $li = $(this).closest('li');
+			var id = $li.attr('data-id');
+			var $label = $li.find('label');
+			var $input = $('<input type="text">').val($label.text()).css('flex', '1');
+			$label.replaceWith($input);
+			$input.focus();
+			$input.on('blur', function () { editTodo(id, $input.val()); });
+			$input.on('keydown', function (e) { if (e.key === 'Enter') { $input.blur(); } if (e.key === 'Escape') { render(); } });
+		});
+
+		$form.on('submit', function (e) {
+			e.preventDefault();
+			var v = $input.val() && $input.val().trim();
+			if (!v) return;
+			addTodo(v);
+			$input.val('');
+			$input.focus();
+		});
+
+		$clearCompleted.on('click', function () {
+			if (!window.localTodoApi) return;
+			window.localTodoApi.clearCompleted();
+			render();
+		});
+
+		$clearAll.on('click', function () {
+			if (!window.localTodoApi) return;
+			if (confirm('Hapus semua tugas?')) {
+				window.localTodoApi.clearAll();
+				render();
+			}
+		});
+
+		// listen for API change events
+		$(window).on('localTodoApi:changed', function () { render(); });
+
+		// initial render on ready
+		$(function () { render(); });
+
+	})(jQuery);
+	</script>
+
+	</body>
+	</html>
