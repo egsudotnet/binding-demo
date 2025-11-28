@@ -72,8 +72,8 @@
 					<div class="d-flex align-items-center gap-2">
 						<input type="checkbox" v-model="todo.completed" @change="toggle(todo)" class="form-check-input me-2" />
 						<div class="d-flex align-items-center gap-2 flex-grow-1">
-							<span v-if="editingId !== todo.id" @dblclick="startEdit(todo)" :style="{ textDecoration: todo.completed ? 'line-through' : 'none', cursor: 'pointer' }">{{ todo.title || '(tanpa judul)' }}</span>
 							<span v-if="todo.label" class="badge bg-info text-dark ms-2">{{ todo.label }}</span>
+							<span v-if="editingId !== todo.id" @dblclick="startEdit(todo)" :style="{ textDecoration: todo.completed ? 'line-through' : 'none', cursor: 'pointer' }">{{ todo.title || '(tanpa judul)' }}</span>
 						</div>
 						<div>
 							<button type="button" class="btn btn-sm btn-outline-secondary" @click="startEdit(todo)">Edit</button>
@@ -119,18 +119,9 @@
 		</section>
 	</main>
 
-	<script>
-		(function(){
-			function getFilename(path) { var parts = path.split('/'); var last = parts.pop() || parts.pop(); return last || ''; }
-			var filename = getFilename(window.location.pathname).toLowerCase();
-			var tabs = document.querySelectorAll('.tabs .tab');
-			if (!filename) filename = 'index.html';
-			tabs.forEach(function(t){ var href = t.getAttribute('href') || ''; var target = getFilename(href).toLowerCase(); if (target && filename.indexOf(target) !== -1) t.classList.add('active'); });
-		})();
-	</script>
-
 	<!-- Vue 3 + local storage API -->
 	<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+	<script src="script.js"></script>
 	<script src="local.js"></script>
 
 	<script>
