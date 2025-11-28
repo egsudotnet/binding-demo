@@ -1,0 +1,7 @@
+ 
+/* Simple tab styles */
+.tabs { display:flex; gap:8px; padding:12px; background:#f7f7f8; border-bottom:1px solid #e0e0e0; }
+.tab { display:inline-block; padding:8px 14px; text-decoration:none; color:#333; border-radius:6px 6px 0 0; background:transparent; transition: background .12s ease, color .12s ease; border:1px solid transparent; }
+.tab:hover { background:#f0f0f0; }
+.tab.active { background:white; color:#111; border-color:#e0e0e0; border-bottom-color:white; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
+body { margin:0; }

@@ -4,6 +4,8 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Vue Demo</title>
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 	<!-- header include (dynamically copied from header.html) -->
@@ -24,29 +26,94 @@
 		body { margin:0; }
 	</style>
 
-	<main style="padding:16px;">
-		<h1>Todo (Vue)</h1>
+	<main class="container py-4">
+		<h1>Vue</h1>
 		<section id="todo-app-vue" aria-label="Todo app (Vue)">
-			<form @submit.prevent="add">
-				<input id="todo-input" v-model="newTitle" type="text" placeholder="Tambah tugas baru..." autocomplete="off" />
-				<button type="submit">Tambah</button>
+			<form @submit.prevent="add" class="mb-3" style="max-width:720px;">
+				<div class="row g-2 align-items-center">
+					<div class="col-auto" style="width:180px;">
+						<input id="todo-label" v-model="newTodo.label" type="text" class="form-control" placeholder="Label (mis. Urgent)" />
+					</div>
+					<div class="col">
+						<input id="todo-input" v-model="newTodo.title" type="text" class="form-control" placeholder="Judul tugas..." autocomplete="off" />
+					</div>
+				</div>
+				<div class="mt-2">
+					<textarea id="todo-desc" v-model="newTodo.description" class="form-control" placeholder="Deskripsi (opsional)" rows="2"></textarea>
+				</div>
+				<div class="row g-2 mt-2">
+					<div class="col-auto">
+						<input id="todo-start" v-model="newTodo.startDate" type="date" class="form-control" />
+					</div>
+					<div class="col-auto">
+						<input id="todo-due" v-model="newTodo.dueDate" type="date" class="form-control" />
+					</div>
+					<div class="col-auto" style="width:160px;">
+						<select id="todo-status" v-model="newTodo.status" class="form-select">
+							<option value="todo">Todo</option>
+							<option value="in-progress">In Progress</option>
+							<option value="done">Done</option>
+						</select>
+					</div>
+					<div class="col-auto">
+						<button type="submit" class="btn btn-primary">Tambah</button>
+					</div>
+				</div>
 			</form>
 
-			<div id="todo-controls" style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-				<span>{{ count }} tugas</span>
-				<button type="button" @click="clearCompleted">Hapus yang selesai</button>
-				<button type="button" @click="clearAll">Hapus semua</button>
+			<div id="todo-controls" class="d-flex gap-2 align-items-center flex-wrap mt-3">
+				<span class="me-2">{{ count }} tugas</span>
+				<button type="button" class="btn btn-outline-secondary btn-sm" @click="clearCompleted">Hapus yang selesai</button>
+				<button type="button" class="btn btn-outline-danger btn-sm" @click="clearAll">Hapus semua</button>
 			</div>
 
-			<ul id="todo-list" style="list-style:none; padding:0; margin-top:12px; max-width:720px;">
-				<li v-for="todo in todosSorted" :key="todo.id" :data-id="todo.id" style="display:flex; align-items:center; gap:8px; padding:8px 6px; border-bottom:1px solid #eee;">
-					<input type="checkbox" v-model="todo.completed" @change="toggle(todo)" />
-					<div style="flex:1">
-						<span v-if="editingId !== todo.id" @dblclick="startEdit(todo)" :style="{ textDecoration: todo.completed ? 'line-through' : 'none', cursor: 'pointer' }">{{ todo.title || '(tanpa judul)' }}</span>
-						<input v-else v-model="editingTitle" @blur="finishEdit(todo)" @keydown.enter="finishEdit(todo)" @keydown.esc="cancelEdit" style="width:100%" />
+			<ul id="todo-list" class="list-group mt-3" style="max-width:720px;">
+				<li v-for="todo in todosSorted" :key="todo.id" :data-id="todo.id" class="list-group-item">
+					<div class="d-flex align-items-center gap-2">
+						<input type="checkbox" v-model="todo.completed" @change="toggle(todo)" class="form-check-input me-2" />
+						<div class="d-flex align-items-center gap-2 flex-grow-1">
+							<span v-if="editingId !== todo.id" @dblclick="startEdit(todo)" :style="{ textDecoration: todo.completed ? 'line-through' : 'none', cursor: 'pointer' }">{{ todo.title || '(tanpa judul)' }}</span>
+							<span v-if="todo.label" class="badge bg-info text-dark ms-2">{{ todo.label }}</span>
+						</div>
+						<div>
+							<button type="button" class="btn btn-sm btn-outline-secondary" @click="startEdit(todo)">Edit</button>
+							<button type="button" class="btn btn-sm btn-outline-danger" @click="remove(todo.id)">Hapus</button>
+						</div>
 					</div>
-					<button type="button" @click="startEdit(todo)">Edit</button>
-					<button type="button" @click="remove(todo.id)">Hapus</button>
+					<div v-if="todo.description" class="mb-1 text-muted">{{ todo.description }}</div>
+					<div class="small text-muted">
+						<span v-if="todo.startDate" class="me-3">Start: {{ todo.startDate }}</span>
+						<span v-if="todo.dueDate" class="me-3">Due: {{ todo.dueDate }}</span>
+						<span v-if="todo.status">Status: {{ todo.status }}</span>
+					</div>
+
+					<!-- inline editor -->
+					<div v-if="editingId === todo.id" class="mt-2">
+						<div class="mb-2">
+							<input v-model="editingDraft.title" class="form-control" />
+						</div>
+						<div class="mb-2 row g-2">
+							<div class="col">
+								<input v-model="editingDraft.label" class="form-control" placeholder="Label (mis. Urgent)" />
+							</div>
+						</div>
+						<div class="mb-2">
+							<textarea v-model="editingDraft.description" class="form-control" rows="3"></textarea>
+						</div>
+						<div class="d-flex gap-2 mb-2">
+							<input v-model="editingDraft.startDate" type="date" class="form-control" style="width:auto" />
+							<input v-model="editingDraft.dueDate" type="date" class="form-control" style="width:auto" />
+							<select v-model="editingDraft.status" class="form-select" style="width:160px">
+								<option value="todo">Todo</option>
+								<option value="in-progress">In Progress</option>
+								<option value="done">Done</option>
+							</select>
+						</div>
+						<div class="d-flex gap-2">
+							<button class="btn btn-sm btn-primary" @click="finishEdit(todo)">Simpan</button>
+							<button class="btn btn-sm btn-secondary" @click="cancelEdit">Batal</button>
+						</div>
+					</div>
 				</li>
 			</ul>
 		</section>
@@ -74,15 +141,14 @@
 
 		createApp({
 			setup() {
-				const newTitle = ref('');
+				const newTodo = reactive({ title: '', label: '', description: '', startDate: '', dueDate: '', status: 'todo' });
 				const todos = reactive([]);
 				const editingId = ref(null);
-				const editingTitle = ref('');
+				const editingDraft = reactive({ title: '', label: '', description: '', startDate: '', dueDate: '', status: 'todo' });
 
 				function load() {
 					if (window.localTodoApi && window.localTodoApi.isAvailable()) {
 						const data = window.localTodoApi.getAll() || [];
-						// clear and push
 						todos.splice(0, todos.length, ...data);
 					}
 				}
@@ -94,11 +160,23 @@
 				const count = computed(() => todos.length);
 
 				function add() {
-					const v = (newTitle.value || '').trim();
+					const v = (newTodo.title || '').trim();
 					if (!v) return;
 					if (window.localTodoApi) {
-						window.localTodoApi.add({ title: v });
-						newTitle.value = '';
+						window.localTodoApi.add({
+							title: newTodo.title,
+							label: newTodo.label,
+							description: newTodo.description,
+							startDate: newTodo.startDate,
+							dueDate: newTodo.dueDate,
+							status: newTodo.status
+						});
+						newTodo.title = '';
+						newTodo.label = '';
+						newTodo.description = '';
+						newTodo.startDate = '';
+						newTodo.dueDate = '';
+						newTodo.status = 'todo';
 						load();
 					}
 				}
@@ -117,21 +195,44 @@
 
 				function startEdit(todo) {
 					editingId.value = todo.id;
-					editingTitle.value = todo.title;
+					editingDraft.title = todo.title || '';
+					editingDraft.label = todo.label || '';
+					editingDraft.description = todo.description || '';
+					editingDraft.startDate = todo.startDate || '';
+					editingDraft.dueDate = todo.dueDate || '';
+					editingDraft.status = todo.status || 'todo';
 				}
 
 				function finishEdit(todo) {
 					if (!editingId.value) return;
-					const v = (editingTitle.value || '').trim();
-					if (v) window.localTodoApi.update(todo.id, { title: v });
+					const updates = {
+						title: editingDraft.title && String(editingDraft.title).trim(),
+						label: editingDraft.label && String(editingDraft.label).trim(),
+						description: editingDraft.description && String(editingDraft.description).trim(),
+						startDate: editingDraft.startDate || '',
+						dueDate: editingDraft.dueDate || '',
+						status: editingDraft.status || 'todo'
+					};
+					window.localTodoApi.update(todo.id, updates);
 					editingId.value = null;
-					editingTitle.value = '';
+					// clear draft
+					editingDraft.title = '';
+					editingDraft.label = '';
+					editingDraft.description = '';
+					editingDraft.startDate = '';
+					editingDraft.dueDate = '';
+					editingDraft.status = 'todo';
 					load();
 				}
 
 				function cancelEdit() {
 					editingId.value = null;
-					editingTitle.value = '';
+					editingDraft.title = '';
+					editingDraft.label = '';
+					editingDraft.description = '';
+					editingDraft.startDate = '';
+					editingDraft.dueDate = '';
+					editingDraft.status = 'todo';
 				}
 
 				function clearCompleted() {
@@ -155,12 +256,12 @@
 				load();
 
 				return {
-					newTitle,
+					newTodo,
 					todos,
 					todosSorted,
 					count,
 					editingId,
-					editingTitle,
+					editingDraft,
 					add,
 					toggle,
 					remove,
@@ -174,5 +275,8 @@
 		}).mount('#todo-app-vue');
 	})();
 	</script>
+
+	<!-- Bootstrap JS bundle (optional) -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

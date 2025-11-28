@@ -4,6 +4,10 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Vue Demo</title>
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="style.css" rel="stylesheet">
+
 </head>
 <body>
 	<!-- header include (dynamically copied from header.html) -->
@@ -15,30 +19,49 @@
 		</nav>
 	</header>
 
-	<style>
-		/* Simple tab styles */
-		.tabs { display:flex; gap:8px; padding:12px; background:#f7f7f8; border-bottom:1px solid #e0e0e0; }
-		.tab { display:inline-block; padding:8px 14px; text-decoration:none; color:#333; border-radius:6px 6px 0 0; background:transparent; transition: background .12s ease, color .12s ease; border:1px solid transparent; }
-		.tab:hover { background:#f0f0f0; }
-		.tab.active { background:white; color:#111; border-color:#e0e0e0; border-bottom-color:white; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
-		body { margin:0; }
-	</style>
 
-	<main style="padding:16px;">
-		<h1>Todo (Native JS)</h1>
+	<main class="container py-4">
+		<h1>Native JS</h1>
 		<section id="todo-app" aria-label="Todo app">
-			<form id="todo-form">
-				<input id="todo-input" type="text" placeholder="Tambah tugas baru..." autocomplete="off" required />
-				<button type="submit">Tambah</button>
+			<form id="todo-form" class="mb-3" style="max-width:720px;">
+				<div class="row g-2 align-items-center">
+					<div class="col-auto" style="width:180px;">
+						<input id="todo-label" type="text" class="form-control" placeholder="Label (mis. Urgent)" autocomplete="off" />
+					</div>
+					<div class="col">
+						<input id="todo-input" type="text" class="form-control" placeholder="Judul tugas..." autocomplete="off" required />
+					</div>
+				</div>
+				<div class="mt-2">
+					<textarea id="todo-desc" class="form-control" placeholder="Deskripsi (opsional)" rows="2"></textarea>
+				</div>
+				<div class="row g-2 mt-2">
+					<div class="col-auto">
+						<input id="todo-start" type="date" class="form-control" />
+					</div>
+					<div class="col-auto">
+						<input id="todo-due" type="date" class="form-control" />
+					</div>
+					<div class="col-auto" style="width:160px;">
+						<select id="todo-status" class="form-select">
+							<option value="todo">Todo</option>
+							<option value="in-progress">In Progress</option>
+							<option value="done">Done</option>
+						</select>
+					</div>
+					<div class="col-auto">
+						<button type="submit" class="btn btn-primary">Tambah</button>
+					</div>
+				</div>
 			</form>
 
-			<div id="todo-controls" style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-				<span id="todo-count">0 tugas</span>
-				<button id="clear-completed" type="button">Hapus yang selesai</button>
-				<button id="clear-all" type="button">Hapus semua</button>
+			<div id="todo-controls" class="d-flex gap-2 align-items-center flex-wrap mt-3">
+				<span id="todo-count" class="me-2">0 tugas</span>
+				<button id="clear-completed" type="button" class="btn btn-outline-secondary btn-sm">Hapus yang selesai</button>
+				<button id="clear-all" type="button" class="btn btn-outline-danger btn-sm">Hapus semua</button>
 			</div>
 
-			<ul id="todo-list" style="list-style:none; padding:0; margin-top:12px; max-width:720px;"></ul>
+			<ul id="todo-list" class="list-group mt-3" style="max-width:720px;"></ul>
 		</section>
 	</main>
 
@@ -65,6 +88,11 @@
 
 		var form = q('#todo-form');
 		var input = q('#todo-input');
+		var labelInput = q('#todo-label');
+		var descInput = q('#todo-desc');
+		var startInput = q('#todo-start');
+		var dueInput = q('#todo-due');
+		var statusSelect = q('#todo-status');
 		var listEl = q('#todo-list');
 		var countEl = q('#todo-count');
 		var clearCompletedBtn = q('#clear-completed');
@@ -96,45 +124,101 @@
 			todos.forEach(function (t) {
 				var li = document.createElement('li');
 				li.setAttribute('data-id', t.id);
-				li.style.display = 'flex';
-				li.style.alignItems = 'center';
-				li.style.gap = '8px';
-				li.style.padding = '8px 6px';
-				li.style.borderBottom = '1px solid #eee';
+				li.className = 'list-group-item';
+				li.style.padding = '';
+
+				var topRow = document.createElement('div');
+				topRow.style.display = 'flex';
+				topRow.style.alignItems = 'center';
+				topRow.style.gap = '8px';
 
 				var cb = document.createElement('input');
 				cb.type = 'checkbox';
 				cb.checked = !!t.completed;
 				cb.className = 'todo-checkbox';
 
-				var label = document.createElement('label');
-				label.textContent = t.title || '(tanpa judul)';
-				label.style.flex = '1';
-				label.style.cursor = 'pointer';
-				if (t.completed) label.style.textDecoration = 'line-through';
+				var titleWrap = document.createElement('div');
+				titleWrap.className = 'd-flex align-items-center gap-2 flex-grow-1';
+
+				var titleEl = document.createElement('div');
+				titleEl.textContent = t.title || '(tanpa judul)';
+				if (t.completed) titleEl.style.textDecoration = 'line-through';
+
+				// optional label badge
+				if (t.label) {
+					var badge = document.createElement('span');
+					badge.className = 'badge bg-info text-dark me-2';
+					badge.textContent = t.label;
+					titleWrap.appendChild(badge);
+				}
+
+				titleWrap.appendChild(titleEl);
 
 				var editBtn = document.createElement('button');
 				editBtn.type = 'button';
 				editBtn.textContent = 'Edit';
-				editBtn.className = 'todo-edit';
+				editBtn.className = 'todo-edit btn btn-sm btn-outline-secondary';
 
 				var delBtn = document.createElement('button');
 				delBtn.type = 'button';
 				delBtn.textContent = 'Hapus';
-				delBtn.className = 'todo-delete';
+				delBtn.className = 'todo-delete btn btn-sm btn-outline-danger';
 
-				li.appendChild(cb);
-				li.appendChild(label);
-				li.appendChild(editBtn);
-				li.appendChild(delBtn);
+				topRow.appendChild(cb);
+				topRow.appendChild(titleWrap);
+				topRow.appendChild(editBtn);
+				topRow.appendChild(delBtn);
+
+				li.appendChild(topRow);
+
+				// description
+				if (t.description) {
+					var p = document.createElement('p');
+					p.textContent = t.description;
+					p.className = 'mb-1 text-muted';
+					li.appendChild(p);
+				}
+
+				// meta row: dates and status
+				var meta = document.createElement('div');
+				meta.className = 'small text-muted';
+
+				if (t.startDate) {
+					var sd = document.createElement('span');
+					sd.textContent = 'Start: ' + t.startDate;
+					sd.className = 'me-3';
+					meta.appendChild(sd);
+				}
+				if (t.dueDate) {
+					var dd = document.createElement('span');
+					dd.textContent = 'Due: ' + t.dueDate;
+					dd.className = 'me-3';
+					meta.appendChild(dd);
+				}
+				if (t.status) {
+					var st = document.createElement('span');
+					st.textContent = 'Status: ' + t.status;
+					meta.appendChild(st);
+				}
+
+				if (meta.children.length) li.appendChild(meta);
 
 				listEl.appendChild(li);
 			});
 		}
 
-		function addTodo(title) {
+		function addTodo(data) {
 			if (!window.localTodoApi || !window.localTodoApi.isAvailable()) return null;
-			var item = window.localTodoApi.add({ title: title });
+			var payload = {
+				title: data && data.title ? String(data.title) : '',
+				label: data && data.label ? String(data.label) : '',
+				description: data && data.description ? String(data.description) : '',
+				startDate: data && data.startDate ? String(data.startDate) : '',
+				dueDate: data && data.dueDate ? String(data.dueDate) : '',
+				status: data && data.status ? String(data.status) : '',
+				completed: !!(data && data.completed)
+			};
+			var item = window.localTodoApi.add(payload);
 			render();
 			return item;
 		}
@@ -171,16 +255,101 @@
 				var li = btn.closest('li');
 				if (!li) return;
 				var id = li.getAttribute('data-id');
-				var label = li.querySelector('label');
-				// turn into input
-				var input = document.createElement('input');
-				input.type = 'text';
-				input.value = label.textContent;
-				input.style.flex = '1';
-				li.replaceChild(input, label);
-				input.focus();
-				input.addEventListener('blur', function () { editTodo(id, input.value); });
-				input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { input.blur(); } if (e.key === 'Escape') { render(); } });
+				var todo = (window.localTodoApi && window.localTodoApi.find) ? window.localTodoApi.find(id) : null;
+				if (!todo) return;
+
+				// build inline editor
+				var editWrap = document.createElement('div');
+				editWrap.style.display = 'grid';
+				editWrap.style.gap = '8px';
+
+				var titleInput = document.createElement('input');
+				titleInput.type = 'text';
+				titleInput.value = todo.title || '';
+				titleInput.placeholder = 'Judul tugas';
+				titleInput.style.width = '100%';
+
+				var labelInp = document.createElement('input');
+				labelInp.type = 'text';
+				labelInp.value = todo.label || '';
+				labelInp.placeholder = 'Label (mis. Urgent)';
+
+				var descTextarea = document.createElement('textarea');
+				descTextarea.rows = 3;
+				descTextarea.value = todo.description || '';
+				descTextarea.placeholder = 'Deskripsi (opsional)';
+
+				var row = document.createElement('div');
+				row.style.display = 'flex';
+				row.style.gap = '8px';
+
+				var startInp = document.createElement('input');
+				startInp.type = 'date';
+				startInp.value = todo.startDate || '';
+
+				var dueInp = document.createElement('input');
+				dueInp.type = 'date';
+				dueInp.value = todo.dueDate || '';
+
+				var statusSel = document.createElement('select');
+				var optTodo = document.createElement('option'); optTodo.value = 'todo'; optTodo.textContent = 'Todo';
+				var optProg = document.createElement('option'); optProg.value = 'in-progress'; optProg.textContent = 'In Progress';
+				var optDone = document.createElement('option'); optDone.value = 'done'; optDone.textContent = 'Done';
+				statusSel.appendChild(optTodo); statusSel.appendChild(optProg); statusSel.appendChild(optDone);
+				statusSel.value = todo.status || 'todo';
+
+				row.appendChild(startInp);
+				row.appendChild(dueInp);
+				row.appendChild(statusSel);
+
+				var btnRow = document.createElement('div');
+				btnRow.style.display = 'flex';
+				btnRow.style.gap = '8px';
+
+				var saveBtn = document.createElement('button');
+				saveBtn.type = 'button';
+				saveBtn.textContent = 'Simpan';
+				saveBtn.className = 'btn btn-sm btn-primary';
+				var cancelBtn = document.createElement('button');
+				cancelBtn.type = 'button';
+				cancelBtn.textContent = 'Batal';
+				cancelBtn.className = 'btn btn-sm btn-secondary';
+
+				btnRow.appendChild(saveBtn);
+				btnRow.appendChild(cancelBtn);
+
+				editWrap.appendChild(titleInput);
+				editWrap.appendChild(labelInp);
+				editWrap.appendChild(descTextarea);
+				editWrap.appendChild(row);
+				editWrap.appendChild(btnRow);
+
+				// replace li contents with editor
+				li.innerHTML = '';
+				li.appendChild(editWrap);
+
+				titleInput.focus();
+
+				saveBtn.addEventListener('click', function () {
+					var updates = {
+						title: titleInput.value && titleInput.value.trim(),
+						label: labelInp.value && labelInp.value.trim(),
+						description: descTextarea.value && descTextarea.value.trim(),
+						startDate: startInp.value || '',
+						dueDate: dueInp.value || '',
+						status: statusSel.value || 'todo'
+					};
+					window.localTodoApi.update(id, updates);
+					render();
+				});
+
+				cancelBtn.addEventListener('click', function () { render(); });
+
+				// keyboard shortcuts: Enter (save) / Escape (cancel)
+				editWrap.addEventListener('keydown', function (ev) {
+					if (ev.key === 'Escape') { ev.preventDefault(); render(); }
+					if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey || ev.target === titleInput)) { ev.preventDefault(); saveBtn.click(); }
+				});
 			}
 		});
 
@@ -196,10 +365,24 @@
 
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
-			var v = input.value && input.value.trim();
-			if (!v) return;
-			addTodo(v);
+			var title = input.value && input.value.trim();
+			if (!title) return;
+			var payload = {
+				title: title,
+				label: labelInput.value && labelInput.value.trim(),
+				description: descInput.value && descInput.value.trim(),
+				startDate: startInput.value || '',
+				dueDate: dueInput.value || '',
+				status: statusSelect.value || 'todo'
+			};
+			addTodo(payload);
+			// clear inputs
 			input.value = '';
+			labelInput.value = '';
+			descInput.value = '';
+			startInput.value = '';
+			dueInput.value = '';
+			statusSelect.value = 'todo';
 			input.focus();
 		});
 
@@ -228,6 +411,9 @@
 
 	})();
 	</script>
+
+	<!-- Bootstrap JS bundle (optional: for components) -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 	</body>
 	</html>
