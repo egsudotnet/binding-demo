@@ -129,8 +129,8 @@
 		'use strict';
 
 		const { createApp, reactive, ref, computed } = Vue;
-
-		createApp({
+        
+		var app = createApp({
 			setup() {
 				const newTodo = reactive({ title: '', label: '', description: '', startDate: '', dueDate: '', status: 'todo' });
 				const todos = reactive([]);
@@ -264,7 +264,12 @@
 				};
 			}
 		}).mount('#todo-app-vue');
+
+		window.$app = app; 
+		/// Variable bisa dihlangkan supaya tetap encaplsulated, untuk debuging saja. Misal $app.todos[0].label = "UBAH SESUAI KEINGINAN"
+
 	})();
+	
 	</script>
 
 	<!-- Bootstrap JS bundle (optional) -->
