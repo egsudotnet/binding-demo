@@ -6,14 +6,16 @@
 	<title>Vue Demo</title>
 	<!-- Bootstrap CSS -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="../style.css" rel="stylesheet">
 </head>
 <body>
 	<!-- header include (dynamically copied from header.html) -->
 	<header>
 		<nav class="tabs" role="navigation" aria-label="Demo tabs">
-			<a class="tab" href="index.html" data-tab="native">Native</a>
-			<a class="tab" href="jquery.html" data-tab="jquery">JQuery</a>
-			<a class="tab" href="vue.html" data-tab="vue">Vue</a>
+			<a class="tab" href="../native/index.html" data-tab="native">Native</a>
+			<a class="tab" href="../jquery/index.html" data-tab="jquery">JQuery</a>
+			<a class="tab" href="../vue/index.html" data-tab="vue">Vue</a>
+			<a class="tab active" href="../vue_jquery/index.html" data-tab="vue_jquery">Vue + JQuery</a>
 		</nav>
 	</header>
 
@@ -27,7 +29,7 @@
 	</style>
 
 	<main class="container py-4">
-		<h1>Vue</h1>
+		<h1>Vue + JQuery</h1>
 		<section id="todo-app-vue" aria-label="Todo app (Vue)">
 			<form @submit.prevent="add" class="mb-3" style="max-width:720px;">
 				<div class="row g-2 align-items-center">
@@ -43,10 +45,10 @@
 				</div>
 				<div class="row g-2 mt-2">
 					<div class="col-auto">
-						<input id="todo-start" v-model="newTodo.startDate" type="date" class="form-control" />
+						<input id="todo-start" v-model="newTodo.startDate" type="text" class="form-control js-datepicker-new" />
 					</div>
 					<div class="col-auto">
-						<input id="todo-due" v-model="newTodo.dueDate" type="date" class="form-control" />
+						<input id="todo-due" v-model="newTodo.dueDate" type="text" class="form-control js-datepicker-new" />
 					</div>
 					<div class="col-auto" style="width:160px;">
 						<select id="todo-status" v-model="newTodo.status" class="form-select">
@@ -101,8 +103,8 @@
 							<textarea v-model="editingDraft.description" class="form-control" rows="3"></textarea>
 						</div>
 						<div class="d-flex gap-2 mb-2">
-							<input v-model="editingDraft.startDate" type="date" class="form-control" style="width:auto" />
-							<input v-model="editingDraft.dueDate" type="date" class="form-control" style="width:auto" />
+							<input v-model="editingDraft.startDate" data-field="start" type="text" class="form-control js-datepicker-edit" style="width:auto" />
+							<input v-model="editingDraft.dueDate" data-field="due" type="text" class="form-control js-datepicker-edit" style="width:auto" />
 							<select v-model="editingDraft.status" class="form-select" style="width:160px">
 								<option value="todo">Todo</option>
 								<option value="in-progress">In Progress</option>
@@ -121,9 +123,14 @@
 
 	<!-- Vue 3 + local storage API -->
 	<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-	<script src="script.js"></script>
-	<script src="local.js"></script>
-	<script src="vue.js"></script>
+	<!-- jQuery + jQuery UI (for datepicker integration example) -->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+	<script src="../script.js"></script>
+	<script src="../local.js"></script>
+	<script src="index.js"></script>
 
 	<!-- Bootstrap JS bundle (optional) -->
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

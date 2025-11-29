@@ -54,7 +54,7 @@
             var cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.checked = !!t.completed;
-            cb.className = 'todo-checkbox';
+            cb.className = 'todo-checkbox form-check-input';
 
             var titleWrap = document.createElement('div');
             titleWrap.className = 'd-flex align-items-center gap-2 flex-grow-1';
