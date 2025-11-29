@@ -10,13 +10,6 @@
             const editingId = ref(null);
             const editingDraft = reactive({ title: '', label: '', description: '', startDate: '', dueDate: '', status: 'todo' });
 
-            function init() {
-                if (window.localTodoApi && window.localTodoApi.isAvailable()) {
-                    const data = window.localTodoApi.getAll() || [];
-                    todos.splice(0, todos.length, ...data);
-                }
-            }
-
             function load() {
                 if (window.localTodoApi && window.localTodoApi.isAvailable()) {
                     const data = window.localTodoApi.getAll() || [];
