@@ -178,31 +178,6 @@
                     }
                 });
 
-                // keep editing inputs in sync when editingId changes (simple polling)
-                let lastEditing = null;
-                function syncEditingInputs(){
-                    try {
-                        const id = window.$app && window.$app.editingId && window.$app.editingId.value ? window.$app.editingId.value : null;
-                        if (!id) return;
-                        const $li = $('[data-id="'+id+'"]');
-                        if (!$li.length) return;
-                        $li.find('.js-datepicker-edit').each(function(){
-                            const field = $(this).data('field');
-                            const val = field === 'start' ? window.$app.editingDraft.startDate : window.$app.editingDraft.dueDate;
-                            $(this).val(val || '');
-                            if ($(this).hasClass('hasDatepicker') && val) $(this).datepicker('setDate', val);
-                        });
-                    } catch(e) { /* ignore errors */ }
-                }
-
-                setInterval(function(){
-                    const cur = window.$app && window.$app.editingId && window.$app.editingId.value ? window.$app.editingId.value : null;
-                    if (cur !== lastEditing) {
-                        lastEditing = cur;
-                        syncEditingInputs();
-                    }
-                }, 250);
-
             });
         })(jQuery);
     }
