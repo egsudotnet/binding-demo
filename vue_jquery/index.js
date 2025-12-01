@@ -154,14 +154,7 @@
                         if (id === 'todo-start') window.$app.newTodo.startDate = dateText;
                         else if (id === 'todo-due') window.$app.newTodo.dueDate = dateText;
                     }
-                });
-
-                // set initial dates if model already has values
-                $('.js-datepicker-new').each(function(){
-                    const id = $(this).attr('id');
-                    if (id === 'todo-start' && window.$app && window.$app.newTodo.startDate) $(this).datepicker('setDate', window.$app.newTodo.startDate);
-                    if (id === 'todo-due' && window.$app && window.$app.newTodo.dueDate) $(this).datepicker('setDate', window.$app.newTodo.dueDate);
-                });
+                }); 
 
                 // initialize datepicker on edit inputs when focused (delegated)
                 $(document).on('focus', '.js-datepicker-edit', function(){
